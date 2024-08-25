@@ -21,9 +21,9 @@ installTheme(){
     mv CBHostingTheme.css /var/www/pterodactyl/resources/scripts/CBHostingTheme.css
     cd /var/www/pterodactyl
 
-    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash - > /dev/null 2>&1
-    apt update -y > /dev/null 2>&1
-    apt install nodejs -y > /dev/null 2>&1
+    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash
+    apt update -y 
+    apt install nodejs -y
 
     cd /var/www/pterodactyl
     yarn build:production
