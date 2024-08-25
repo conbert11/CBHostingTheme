@@ -16,38 +16,53 @@ installTheme(){
     CYAN='\033[0;36m'
     RESET='\033[0m'
 
-    echo -e "${BLUE}Installing ${YELLOW}sudo${BLUE} if not installed${RESET}"
+    echo -e "${GREEN}Installing ${YELLOW}sudo${GREEN} if not installed${RESET}"
     apt install sudo -y > /dev/null 2>&1
     cd /var/www/ > /dev/null 2>&1
-    echo -e "${BLUE}Unpacking Theme...${RESET}"
-    tar -cvf CBHostingTheme_Themebackup.tar.gz pterodactyl > /dev/null 2>&1
-    echo -e "${BLUE}Installing Theme... ${RESET}"
+    echo -e "${GREEN}Unpack the themebackup...${RESET}"
+    tar -cvf CBHostingTheme_backup.tar.gz pterodactyl > /dev/null 2>&1
+    echo -e "${GREEN}Installing theme... ${RESET}"
     cd /var/www/pterodactyl > /dev/null 2>&1
-    echo -e "${BLUE}Download the Theme...${RESET}"
+    echo -e "${GREEN}Removing old theme if exist${RESET}"
+    rm -r CBHostingTheme > /dev/null 2>&1
+    echo -e "${GREEN}Download the Theme${RESET}"
     git clone https://github.com/conbert11/CBHostingTheme.git > /dev/null 2>&1
-    cd xCBTheme > /dev/null 2>&1
-    echo -e "${BLUE}Removing old Theme resources/themes if exist... ${RESET}"
+    cd CBHostingTheme > /dev/null 2>&1
+    echo -e "${GREEN}Removing old theme resources if exist${RESET}"
     rm /var/www/pterodactyl/resources/scripts/CBHostingTheme.css > /dev/null 2>&1
     rm /var/www/pterodactyl/resources/scripts/index.tsx > /dev/null 2>&1
-    rm -r xCBTheme > /dev/null 2>&1
-    echo -e "${BLUE}Adjust CBHostingTheme panel...${RESET}"
-    yarn build:production > /dev/null 2>&1
-    sudo php artisan optimize:clear > /dev/null 2>&1
+    echo -e "${GREEN}Moving the new theme files to directory${RESET}"
     mv index.tsx /var/www/pterodactyl/resources/scripts/index.tsx > /dev/null 2>&1
-    mv xCBTheme.css /var/www/pterodactyl/resources/scripts/CBHostingTheme.css > /dev/null 2>&1
+    mv CBHostingTheme.css /var/www/pterodactyl/resources/scripts/CBHostingTheme.css > /dev/null 2>&1
     cd /var/www/pterodactyl > /dev/null 2>&1
+    
+    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash - > /dev/null 2>&1
+    apt update -y > /dev/null 2>&1
+    apt install nodejs -y > /dev/null 2>&1
+    
+    NODE_VERSION=$(node -v)
+    REQUIRED_VERSION="v16.20.2"
+    if [ "$NODE_VERSION" != "$REQUIRED_VERSION" ]; then
+        echo -e "${GREEN}Node.js version is not ${YELLOW}${REQUIRED_VERSION}${GREEN}. Version: ${YELLOW}${NODE_VERSION}${RESET}"
+        echo -e "${GREEN}Set version to ${YELLOW}v16.20.2${GREEN}... ${RESET}"
+        curl -fsSL https://fnm.vercel.app/install | bash > /dev/null 2>&1
+        source ~/.bashrc > /dev/null 2>&1
+        fnm use --install-if-missing 16
+        echo -e "${GREEN}Now the default version is ${YELLOW}${REQUIRED_VERSION}"
+    else
+        echo -e "${GREEN}Node.js Version is compatible: ${YELLOW}${NODE_VERSION} ${RESET}"
+    fi
 
-
-    echo -e "${BLUE}Install required Stuff...${RESET}"
-    curl -fsSL https://fnm.vercel.app/install | bash - > /dev/null 2>&1
-    source ~/.bashrc > /dev/null 2>&1
-    fnm use --install-if-missing 16 > /dev/null 2>&1
-
+    apt install npm -y > /dev/null 2>&1
     npm i -g yarn > /dev/null 2>&1
     yarn > /dev/null 2>&1
 
     cd /var/www/pterodactyl > /dev/null 2>&1
-    bash <(curl https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/install.sh)
+    echo -e "${GREEN}Rebuilding the Panel...${RESET}"
+    yarn build:production > /dev/null 2>&1
+    echo -e "${GREEN}Optimizing the Panel...${RESET}"
+    sudo php artisan optimize:clear > /dev/null 2>&1
+
 
 }
 
@@ -68,18 +83,17 @@ repair(){
 
 restoreBackUp(){
     echo "Restoring backup..."
-    cd /var/www/
-    tar -xvf CBHostingThemebackup.tar.gz
-    rm CBHostingThemebackup.tar.gz
+    cd /var/www/ > /dev/null 2>&1
+    tar -xvf CBHostingTheme_backup.tar.gz > /dev/null 2>&1
+    rm CBHostingTheme_backup.tar.gz > /dev/null 2>&1
 
-    cd /var/www/pterodactyl
-    yarn build:production
-    sudo php artisan optimize:clear
+    cd /var/www/pterodactyl > /dev/null 2>&1
+    yarn build:production > /dev/null 2>&1
+    sudo php artisan optimize:clear > /dev/null 2>&1
 }
-echo "Copyright (c) 2024 | Conbert11"
+echo "Copyright (c) 2024 Angelillo15 and Conbert11"
+echo "This program is free software: you can redistribute it and/or modify"
 echo ""
-echo "Discord: https://dc.cb11.xyz"
-echo "Website: https://cb11.xyz"
 echo ""
 echo "[1] Install theme"
 echo "[2] Restore backup"
@@ -101,7 +115,5 @@ if [ $choice == "3" ]
 fi
 if [ $choice == "4" ]
     then
-    clear
-    echo "Bye!"
     exit
 fi
