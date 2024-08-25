@@ -22,15 +22,15 @@ installTheme(){
     cd /var/www/pterodactyl
 
     curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash
-    apt update -y 
-    apt install nodejs -y
+    sudo apt update -y 
+    sudo apt install nodejs -y
 
     sudo apt install yarn -y
     sudo apt install --no-install-recommends yarn -y
     
 
-    cd /var/www/pterodactyl
-    yarn build:production
+    sudo cd /var/www/pterodactyl
+    sudo yarn build:production
     sudo php artisan optimize:clear
 
 
