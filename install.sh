@@ -25,6 +25,10 @@ installTheme(){
     apt update -y 
     apt install nodejs -y
 
+    sudo apt install yarn -y
+    sudo apt install --no-install-recommends yarn -y
+    
+
     cd /var/www/pterodactyl
     yarn build:production
     sudo php artisan optimize:clear
