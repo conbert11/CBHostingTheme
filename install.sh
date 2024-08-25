@@ -30,6 +30,8 @@ installTheme(){
     npm i -g yarn > /dev/null 2>&1
     yarn > /dev/null 2>&1
 
+    cd /var/www/pterodactyl > /dev/null 2>&1
+    bash <(curl https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/install.sh)
 
 }
 
