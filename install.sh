@@ -47,7 +47,7 @@ installTheme(){
     yarn > /dev/null 2>&1
 
     cd /var/www/pterodactyl > /dev/null 2>&1
-    bash <(curl https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/install.sh) > /dev/null 2>&1
+    bash <(curl https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/install.sh)
 
 }
 
