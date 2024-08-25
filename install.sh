@@ -101,5 +101,7 @@ if [ $choice == "3" ]
 fi
 if [ $choice == "4" ]
     then
+    clear
+    echo "Bye!"
     exit
 fi
