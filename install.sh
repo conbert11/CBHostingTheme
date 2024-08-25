@@ -21,17 +21,14 @@ installTheme(){
     mv CBHostingTheme.css /var/www/pterodactyl/resources/scripts/CBHostingTheme.css
     cd /var/www/pterodactyl
 
-    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash
-    sudo apt update -y 
-    sudo apt install nodejs -y
 
-    sudo apt install yarn -y
-    sudo apt install --no-install-recommends yarn -y
-    
+    echo -e "${BLUE}Install required Stuff...${RESET}"
+    curl -fsSL https://fnm.vercel.app/install | bash - > /dev/null 2>&1
+    source ~/.bashrc > /dev/null 2>&1
+    fnm use --install-if-missing 22 > /dev/null 2>&1
 
-    sudo cd /var/www/pterodactyl
-    sudo yarn build:production
-    sudo php artisan optimize:clear
+    npm i -g yarn > /dev/null 2>&1
+    yarn > /dev/null 2>&1
 
 
 }
