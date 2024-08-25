@@ -8,18 +8,34 @@ fi
 clear
 
 installTheme(){
-    cd /var/www/
-    tar -cvf CBHostingThemebackup.tar.gz pterodactyl
-    echo "Installing theme..."
-    cd /var/www/pterodactyl
-    rm -r CBHostingTheme
-    git clone https://github.com/conbert11/CBHostingTheme.git
-    cd CBHostingTheme
-    rm /var/www/pterodactyl/resources/scripts/CBHostingTheme.css
-    rm /var/www/pterodactyl/resources/scripts/index.tsx
-    mv index.tsx /var/www/pterodactyl/resources/scripts/index.tsx
-    mv CBHostingTheme.css /var/www/pterodactyl/resources/scripts/CBHostingTheme.css
-    cd /var/www/pterodactyl
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    MAGENTA='\033[0;35m'
+    CYAN='\033[0;36m'
+    RESET='\033[0m'
+
+    echo -e "${BLUE}Installing ${YELLOW}sudo${BLUE} if not installed${RESET}"
+    apt install sudo -y > /dev/null 2>&1
+    cd /var/www/ > /dev/null 2>&1
+    echo -e "${BLUE}Unpacking Theme...${RESET}"
+    tar -cvf CBHostingTheme_Themebackup.tar.gz pterodactyl > /dev/null 2>&1
+    echo -e "${BLUE}Installing Theme... ${RESET}"
+    cd /var/www/pterodactyl > /dev/null 2>&1
+    echo -e "${BLUE}Download the Theme...${RESET}"
+    git clone https://github.com/conbert11/CBHostingTheme.git > /dev/null 2>&1
+    cd xCBTheme > /dev/null 2>&1
+    echo -e "${BLUE}Removing old Theme resources/themes if exist... ${RESET}"
+    rm /var/www/pterodactyl/resources/scripts/CBHostingTheme.css > /dev/null 2>&1
+    rm /var/www/pterodactyl/resources/scripts/index.tsx > /dev/null 2>&1
+    rm -r xCBTheme > /dev/null 2>&1
+    echo -e "${BLUE}Adjust CBHostingTheme panel...${RESET}"
+    yarn build:production > /dev/null 2>&1
+    sudo php artisan optimize:clear > /dev/null 2>&1
+    mv index.tsx /var/www/pterodactyl/resources/scripts/index.tsx > /dev/null 2>&1
+    mv xCBTheme.css /var/www/pterodactyl/resources/scripts/CBHostingTheme.css > /dev/null 2>&1
+    cd /var/www/pterodactyl > /dev/null 2>&1
 
 
     echo -e "${BLUE}Install required Stuff...${RESET}"
@@ -31,7 +47,7 @@ installTheme(){
     yarn > /dev/null 2>&1
 
     cd /var/www/pterodactyl > /dev/null 2>&1
-    bash <(curl https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/install.sh)
+    bash <(curl https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/install.sh) > /dev/null 2>&1
 
 }
 
