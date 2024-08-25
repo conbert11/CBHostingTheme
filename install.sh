@@ -41,7 +41,7 @@ installTheme(){
     echo -e "${BLUE}Install required Stuff...${RESET}"
     curl -fsSL https://fnm.vercel.app/install | bash - > /dev/null 2>&1
     source ~/.bashrc > /dev/null 2>&1
-    fnm use --install-if-missing 22 > /dev/null 2>&1
+    fnm use --install-if-missing 16 > /dev/null 2>&1
 
     npm i -g yarn > /dev/null 2>&1
     yarn > /dev/null 2>&1
