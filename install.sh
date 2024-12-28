@@ -136,7 +136,7 @@ install_theme() {
     if ! install_yarn; then
         print_message "RED" "Yarn installation failed, aborting installation"
         exit 1
-    }
+    fi
     
     print_message "GREEN" "Installing theme..."
     cd /var/www/pterodactyl || exit 1
@@ -188,12 +188,12 @@ restore_backup() {
     if [ -z "$latest_backup" ]; then
         print_message "RED" "No backup file found!"
         exit 1
-    }
+    fi
     
     if ! tar -xzf "$latest_backup" &>/dev/null; then
         print_message "RED" "Failed to restore backup"
         exit 1
-    }
+    fi
     
     rm "$latest_backup" &>/dev/null
     
@@ -201,12 +201,12 @@ restore_backup() {
     if ! yarn build:production &>/dev/null; then
         print_message "RED" "Failed to rebuild panel"
         exit 1
-    }
+    fi
     
     if ! php artisan optimize:clear &>/dev/null; then
         print_message "RED" "Failed to clear cache"
         exit 1
-    }
+    fi
     
     print_message "GREEN" "Backup restored successfully!"
 }
@@ -219,7 +219,7 @@ repair_panel() {
     if ! curl -s https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/repair.sh | bash &>/dev/null; then
         print_message "RED" "Failed to run repair script"
         exit 1
-    }
+    fi
     
     print_message "GREEN" "Panel repair completed!"
 }
