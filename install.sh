@@ -33,65 +33,147 @@ execute_command() {
     
     if ! eval "$command" > /dev/null 2>&1; then
         print_message "RED" "Error: $error_message"
-        exit 1
+        return 1
     fi
+    return 0
+}
+
+# Clean NodeJS installation
+clean_nodejs() {
+    print_message "YELLOW" "Cleaning existing NodeJS installation..."
+    
+    # Remove existing nodejs and npm
+    apt-get remove -y nodejs npm &>/dev/null
+    apt-get purge -y nodejs npm &>/dev/null
+    apt-get autoremove -y &>/dev/null
+    
+    # Remove NodeSource repository if exists
+    rm -f /etc/apt/sources.list.d/nodesource.list &>/dev/null
+    rm -f /etc/apt/sources.list.d/nodesource.list.save &>/dev/null
+    
+    # Clear apt cache
+    apt-get clean &>/dev/null
+    apt-get update &>/dev/null
+}
+
+# Install NodeJS 16
+install_nodejs() {
+    print_message "GREEN" "Installing NodeJS 16..."
+    
+    # Clean existing installation
+    clean_nodejs
+    
+    # Install curl if not present
+    apt-get install -y curl &>/dev/null
+    
+    # Add NodeSource repository for Node.js 16
+    curl -fsSL https://deb.nodesource.com/setup_16.x | bash - &>/dev/null
+    
+    # Install Node.js 16
+    if ! apt-get install -y nodejs=16.* &>/dev/null; then
+        print_message "RED" "Failed to install NodeJS 16"
+        return 1
+    fi
+    
+    # Verify installation
+    local node_version=$(node -v)
+    if [[ $node_version != v16* ]]; then
+        print_message "RED" "NodeJS installation verification failed"
+        return 1
+    fi
+    
+    print_message "GREEN" "NodeJS ${node_version} installed successfully"
+    return 0
+}
+
+# Install Yarn
+install_yarn() {
+    print_message "GREEN" "Installing Yarn..."
+    
+    # Remove existing yarn if present
+    npm uninstall -g yarn &>/dev/null
+    
+    # Install yarn globally
+    if ! npm install -g yarn &>/dev/null; then
+        print_message "RED" "Failed to install Yarn"
+        return 1
+    fi
+    
+    print_message "GREEN" "Yarn installed successfully"
+    return 0
 }
 
 # Create backup
 create_backup() {
     print_message "GREEN" "Creating backup..."
     cd /var/www/ || exit 1
-    execute_command "tar -czf pterodactyl_backup_$(date +%Y%m%d_%H%M%S).tar.gz pterodactyl" "Failed to create backup"
-}
-
-# Install required dependencies
-install_dependencies() {
-    print_message "GREEN" "Installing dependencies..."
-    execute_command "apt update" "Failed to update package list"
-    execute_command "apt install -y sudo git curl nodejs npm" "Failed to install dependencies"
+    local backup_file="pterodactyl_backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+    if ! tar -czf "$backup_file" pterodactyl &>/dev/null; then
+        print_message "RED" "Failed to create backup"
+        return 1
+    fi
+    print_message "GREEN" "Backup created: $backup_file"
+    return 0
 }
 
 # Install theme function
 install_theme() {
     check_root
-    create_backup
-    install_dependencies
-
+    
+    # Create backup first
+    if ! create_backup; then
+        print_message "RED" "Backup creation failed, aborting installation"
+        exit 1
+    fi
+    
+    # Install NodeJS
+    if ! install_nodejs; then
+        print_message "RED" "NodeJS installation failed, aborting installation"
+        exit 1
+    fi
+    
+    # Install Yarn
+    if ! install_yarn; then
+        print_message "RED" "Yarn installation failed, aborting installation"
+        exit 1
+    }
+    
     print_message "GREEN" "Installing theme..."
     cd /var/www/pterodactyl || exit 1
     
     # Remove old theme if exists
     if [ -d "CBHostingTheme" ]; then
-        execute_command "rm -rf CBHostingTheme" "Failed to remove old theme"
+        rm -rf CBHostingTheme
     fi
 
-    # Clone new theme
-    execute_command "git clone https://github.com/conbert11/CBHostingTheme.git" "Failed to clone theme repository"
+    # Clone theme repository
+    if ! git clone https://github.com/conbert11/CBHostingTheme.git &>/dev/null; then
+        print_message "RED" "Failed to clone theme repository"
+        exit 1
+    fi
     
-    # Setup theme files
+    # Move theme files
     cd CBHostingTheme || exit 1
-    execute_command "mv index.tsx /var/www/pterodactyl/resources/scripts/" "Failed to move index.tsx"
-    execute_command "mv CBHostingTheme.css /var/www/pterodactyl/resources/scripts/" "Failed to move CSS file"
-
-    # Setup Node.js version
-    REQUIRED_NODE_VERSION="16.20.2"
-    CURRENT_NODE_VERSION=$(node -v)
-
-    if [ "$CURRENT_NODE_VERSION" != "v$REQUIRED_NODE_VERSION" ]; then
-        print_message "YELLOW" "Installing Node.js version $REQUIRED_NODE_VERSION..."
-        execute_command "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash" "Failed to install NVM"
-        source ~/.nvm/nvm.sh
-        execute_command "nvm install $REQUIRED_NODE_VERSION" "Failed to install Node.js"
-        execute_command "nvm use $REQUIRED_NODE_VERSION" "Failed to switch Node.js version"
-    fi
-
-    # Install and build
+    mv index.tsx /var/www/pterodactyl/resources/scripts/ &>/dev/null
+    mv CBHostingTheme.css /var/www/pterodactyl/resources/scripts/ &>/dev/null
+    
+    # Build theme
     cd /var/www/pterodactyl || exit 1
-    execute_command "npm install -g yarn" "Failed to install Yarn"
-    execute_command "yarn" "Failed to install dependencies"
-    execute_command "yarn build:production" "Failed to build production"
-    execute_command "php artisan optimize:clear" "Failed to clear cache"
-
+    if ! yarn &>/dev/null; then
+        print_message "RED" "Failed to install dependencies"
+        exit 1
+    fi
+    
+    if ! yarn build:production &>/dev/null; then
+        print_message "RED" "Failed to build theme"
+        exit 1
+    fi
+    
+    if ! php artisan optimize:clear &>/dev/null; then
+        print_message "RED" "Failed to clear cache"
+        exit 1
+    fi
+    
     print_message "GREEN" "Theme installation completed successfully!"
 }
 
@@ -100,19 +182,31 @@ restore_backup() {
     check_root
     print_message "GREEN" "Restoring backup..."
     
-    local latest_backup=$(ls -t /var/www/pterodactyl_backup_*.tar.gz 2>/dev/null | head -1)
+    cd /var/www/ || exit 1
+    local latest_backup=$(ls -t pterodactyl_backup_*.tar.gz 2>/dev/null | head -1)
+    
     if [ -z "$latest_backup" ]; then
         print_message "RED" "No backup file found!"
         exit 1
-    fi
-
-    cd /var/www/ || exit 1
-    execute_command "tar -xzf $latest_backup" "Failed to restore backup"
-    execute_command "rm $latest_backup" "Failed to clean up backup file"
+    }
+    
+    if ! tar -xzf "$latest_backup" &>/dev/null; then
+        print_message "RED" "Failed to restore backup"
+        exit 1
+    }
+    
+    rm "$latest_backup" &>/dev/null
     
     cd /var/www/pterodactyl || exit 1
-    execute_command "yarn build:production" "Failed to rebuild panel"
-    execute_command "php artisan optimize:clear" "Failed to clear cache"
+    if ! yarn build:production &>/dev/null; then
+        print_message "RED" "Failed to rebuild panel"
+        exit 1
+    }
+    
+    if ! php artisan optimize:clear &>/dev/null; then
+        print_message "RED" "Failed to clear cache"
+        exit 1
+    }
     
     print_message "GREEN" "Backup restored successfully!"
 }
@@ -121,13 +215,19 @@ restore_backup() {
 repair_panel() {
     check_root
     print_message "GREEN" "Repairing panel..."
-    execute_command "curl -s https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/repair.sh | bash" "Failed to run repair script"
+    
+    if ! curl -s https://raw.githubusercontent.com/conbert11/CBHostingTheme/main/repair.sh | bash &>/dev/null; then
+        print_message "RED" "Failed to run repair script"
+        exit 1
+    }
+    
+    print_message "GREEN" "Panel repair completed!"
 }
 
 # Main menu
 show_menu() {
     clear
-    echo "Copyright (c) 2024 Angelillo15 and Conbert11"
+    echo "Copyright (c) 2024 Conbert11"
     echo "This program is free software: you can redistribute it and/or modify"
     echo
     echo "Theme Installer Menu:"
